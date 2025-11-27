@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "../api/axios";
 
@@ -13,6 +13,8 @@ const EditEmployeePage = () => {
     department: "",
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -20,19 +22,30 @@ const EditEmployeePage = () => {
     const fetchEmployee = async () => {
       try {
         const response = await axios.get(`/emp/employees/${id}`);
-        const employee = response.data;
-        // Format date for input field
+        const employee = response.data || {};
         if (employee.date_of_joining) {
           employee.date_of_joining = new Date(employee.date_of_joining)
             .toISOString()
             .split("T")[0];
         }
-        setFormData(employee);
+        const sanitized = {
+          first_name: employee.first_name || "",
+          last_name: employee.last_name || "",
+          email: employee.email || "",
+          position: employee.position || "",
+          salary: employee.salary ? String(employee.salary) : "",
+          date_of_joining: employee.date_of_joining || "",
+          department: employee.department || "",
+        };
+        setFormData(sanitized);
       } catch (err) {
-        setError("Failed to fetch employee data");
+        setError("We couldn’t load the teammate profile.");
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchEmployee();
   }, [id]);
 
@@ -42,69 +55,157 @@ const EditEmployeePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
+    setError("");
     try {
       await axios.put(`/emp/employees/${id}`, formData);
       navigate("/employees");
     } catch (err) {
-      setError("Failed to update employee");
+      setError("Update failed. Please try again.");
       console.error(err);
+    } finally {
+      setSaving(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="form-page">
+        <div className="page-hero">
+          <p className="eyebrow">People operations</p>
+          <h1>Loading teammate profile</h1>
+          <p>Hang tight while we sync the latest record.</p>
+        </div>
+        <div className="glass-card">
+          <p className="subtle-text">Fetching profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h2>Edit Employee</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          name="first_name"
-          placeholder="First Name"
-          value={formData.first_name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="last_name"
-          placeholder="Last Name"
-          value={formData.last_name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="position"
-          placeholder="Position"
-          value={formData.position}
-          onChange={handleChange}
-        />
-        <input
-          name="salary"
-          type="number"
-          placeholder="Salary"
-          value={formData.salary}
-          onChange={handleChange}
-        />
-        <input
-          name="date_of_joining"
-          type="date"
-          placeholder="Date of Joining"
-          value={formData.date_of_joining}
-          onChange={handleChange}
-        />
-        <input
-          name="department"
-          placeholder="Department"
-          value={formData.department}
-          onChange={handleChange}
-        />
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">Update Employee</button>
+    <div className="form-page">
+      <div className="page-hero">
+        <p className="eyebrow">People operations</p>
+        <h1>Update teammate record</h1>
+        <p>Edit naming, department, or compensation details in seconds.</p>
+      </div>
+      <form className="form-card form-stack" onSubmit={handleSubmit}>
+        <div className="form-grid">
+          <div className="input-field">
+            <label className="input-label" htmlFor="edit-first-name">
+              First name
+            </label>
+            <input
+              id="edit-first-name"
+              className="input-control"
+              name="first_name"
+              placeholder="First name"
+              value={formData.first_name || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="edit-last-name">
+              Last name
+            </label>
+            <input
+              id="edit-last-name"
+              className="input-control"
+              name="last_name"
+              placeholder="Last name"
+              value={formData.last_name || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="edit-email">
+              Work email
+            </label>
+            <input
+              id="edit-email"
+              className="input-control"
+              name="email"
+              type="email"
+              placeholder="email@company.com"
+              value={formData.email || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="edit-position">
+              Role or title
+            </label>
+            <input
+              id="edit-position"
+              className="input-control"
+              name="position"
+              placeholder="Role"
+              value={formData.position || ""}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="edit-department">
+              Department
+            </label>
+            <input
+              id="edit-department"
+              className="input-control"
+              name="department"
+              placeholder="Department"
+              value={formData.department || ""}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="edit-salary">
+              Salary (annual)
+            </label>
+            <input
+              id="edit-salary"
+              className="input-control"
+              name="salary"
+              type="number"
+              min="0"
+              placeholder="90000"
+              value={formData.salary || ""}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="edit-doj">
+              Start date
+            </label>
+            <input
+              id="edit-doj"
+              className="input-control"
+              name="date_of_joining"
+              type="date"
+              value={formData.date_of_joining || ""}
+              onChange={handleChange}
+            />
+            <p className="subtle-text">
+              Used to track anniversaries and tenure.
+            </p>
+          </div>
+        </div>
+        {error && <p className="form-error">{error}</p>}
+        <div className="form-actions">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => navigate(-1)}
+          >
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>
+            {saving ? "Updating..." : "Save changes"}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -13,6 +13,7 @@ const AddEmployeePage = () => {
     department: "",
   });
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -21,58 +22,145 @@ const AddEmployeePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
+    setError("");
     try {
       await axios.post("/emp/employees", formData);
       navigate("/employees");
     } catch (err) {
-      setError("Failed to add employee");
+      setError("We couldn’t create the teammate. Please try again.");
       console.error(err);
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div>
-      <h2>Add Employee</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          name="first_name"
-          placeholder="First Name"
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="last_name"
-          placeholder="Last Name"
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          onChange={handleChange}
-          required
-        />
-        <input name="position" placeholder="Position" onChange={handleChange} />
-        <input
-          name="salary"
-          type="number"
-          placeholder="Salary"
-          onChange={handleChange}
-        />
-        <input
-          name="date_of_joining"
-          type="date"
-          placeholder="Date of Joining"
-          onChange={handleChange}
-        />
-        <input
-          name="department"
-          placeholder="Department"
-          onChange={handleChange}
-        />
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">Add Employee</button>
+    <div className="form-page">
+      <div className="page-hero">
+        <p className="eyebrow">People operations</p>
+        <h1>Invite a new teammate</h1>
+        <p>
+          Capture the essentials up front so HR, payroll, and IT can be ready on
+          day one.
+        </p>
+      </div>
+      <form className="form-card form-stack" onSubmit={handleSubmit}>
+        <div className="form-grid">
+          <div className="input-field">
+            <label className="input-label" htmlFor="add-first-name">
+              First name
+            </label>
+            <input
+              id="add-first-name"
+              className="input-control"
+              name="first_name"
+              placeholder="Jamie"
+              value={formData.first_name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="add-last-name">
+              Last name
+            </label>
+            <input
+              id="add-last-name"
+              className="input-control"
+              name="last_name"
+              placeholder="Lee"
+              value={formData.last_name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="add-email">
+              Work email
+            </label>
+            <input
+              id="add-email"
+              className="input-control"
+              name="email"
+              type="email"
+              placeholder="jamie@company.com"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="add-position">
+              Role or title
+            </label>
+            <input
+              id="add-position"
+              className="input-control"
+              name="position"
+              placeholder="Product Manager"
+              value={formData.position}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="add-department">
+              Department
+            </label>
+            <input
+              id="add-department"
+              className="input-control"
+              name="department"
+              placeholder="Product"
+              value={formData.department}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="add-salary">
+              Salary (annual)
+            </label>
+            <input
+              id="add-salary"
+              className="input-control"
+              name="salary"
+              type="number"
+              min="0"
+              placeholder="90000"
+              value={formData.salary}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="input-field">
+            <label className="input-label" htmlFor="add-doj">
+              Start date
+            </label>
+            <input
+              id="add-doj"
+              className="input-control"
+              name="date_of_joining"
+              type="date"
+              value={formData.date_of_joining}
+              onChange={handleChange}
+            />
+            <p className="subtle-text">
+              We’ll use this to schedule onboarding.
+            </p>
+          </div>
+        </div>
+        {error && <p className="form-error">{error}</p>}
+        <div className="form-actions">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => navigate(-1)}
+          >
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>
+            {saving ? "Saving..." : "Create teammate"}
+          </button>
+        </div>
       </form>
     </div>
   );
