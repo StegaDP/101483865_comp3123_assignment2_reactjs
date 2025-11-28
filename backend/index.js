@@ -3,6 +3,7 @@ const app = express();
 const port = 8000;
 const userRouter = require("./routes/user");
 const employeeRouter = require("./routes/employee");
+const imgRouter = require("./routes/images");
 const mongoose = require("mongoose");
 
 app.use(express.json());
@@ -14,6 +15,7 @@ mongoose
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/emp", employeeRouter);
+app.use("/api/v1/img", imgRouter);
 
 app.get("/", (req, res) => {
   res.send("hello world");

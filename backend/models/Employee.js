@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const {mongoose, Types} = require('mongoose');
 
 const employeeScheme = new mongoose.Schema({
     first_name: String,
@@ -8,6 +8,7 @@ const employeeScheme = new mongoose.Schema({
     salary: Number,
     date_of_joining: Date,
     department: String,
+    imageId: {type: Types.ObjectId, default: null}
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 module.exports = mongoose.model('employee', employeeScheme);
