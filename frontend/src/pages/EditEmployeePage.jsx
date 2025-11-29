@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "../api/axios";
+import { uploadEmployeeAvatar } from "../api/images";
+import { buildAvatarUrl, getInitials } from "../utils/avatar";
 
 const EditEmployeePage = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +14,9 @@ const EditEmployeePage = () => {
     date_of_joining: "",
     department: "",
   });
+  const [currentImageId, setCurrentImageId] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,8 +43,11 @@ const EditEmployeePage = () => {
           department: employee.department || "",
         };
         setFormData(sanitized);
+        setCurrentImageId(employee.imageId || "");
+        setAvatarFile(null);
+        setAvatarPreview("");
       } catch (err) {
-        setError("We couldn’t load the teammate profile.");
+        setError("We couldn't load the teammate profile.");
         console.error(err);
       } finally {
         setLoading(false);
@@ -49,8 +57,30 @@ const EditEmployeePage = () => {
     fetchEmployee();
   }, [id]);
 
+  useEffect(() => {
+    if (!avatarPreview) {
+      return undefined;
+    }
+    return () => URL.revokeObjectURL(avatarPreview);
+  }, [avatarPreview]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+    event.target.value = "";
+  };
+
+  const handleAvatarClear = () => {
+    setAvatarFile(null);
+    setAvatarPreview("");
   };
 
   const handleSubmit = async (e) => {
@@ -59,13 +89,26 @@ const EditEmployeePage = () => {
     setError("");
     try {
       await axios.put(`/emp/employees/${id}`, formData);
-      navigate("/employees");
     } catch (err) {
       setError("Update failed. Please try again.");
       console.error(err);
-    } finally {
       setSaving(false);
+      return;
     }
+
+    if (avatarFile) {
+      try {
+        await uploadEmployeeAvatar(id, avatarFile);
+      } catch (uploadError) {
+        setError("Photo upload failed. Please try again.");
+        console.error(uploadError);
+        setSaving(false);
+        return;
+      }
+    }
+
+    navigate("/employees");
+    setSaving(false);
   };
 
   if (loading) {
@@ -83,6 +126,13 @@ const EditEmployeePage = () => {
     );
   }
 
+  const avatarInitials = getInitials(
+    formData.first_name,
+    formData.last_name,
+    formData.email,
+  );
+  const avatarSource = avatarPreview || buildAvatarUrl(currentImageId);
+
   return (
     <div className="form-page">
       <div className="page-hero">
@@ -91,6 +141,41 @@ const EditEmployeePage = () => {
         <p>Edit naming, department, or compensation details in seconds.</p>
       </div>
       <form className="form-card form-stack" onSubmit={handleSubmit}>
+        <div className="avatar-upload">
+          <div className="avatar avatar-large">
+            {avatarSource ? (
+              <img src={avatarSource} alt="Current avatar" />
+            ) : (
+              <span>{avatarInitials}</span>
+            )}
+          </div>
+          <div className="avatar-upload-actions">
+            <p className="subtle-text">
+              Drop in a new image to refresh their avatar. Square PNG or JPG
+              works best.
+            </p>
+            <div className="avatar-upload-buttons">
+              <label className="btn btn-ghost btn-small">
+                {avatarFile ? "Change selection" : "Upload new photo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleAvatarChange}
+                />
+              </label>
+              {avatarFile && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-small"
+                  onClick={handleAvatarClear}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
         <div className="form-grid">
           <div className="input-field">
             <label className="input-label" htmlFor="edit-first-name">

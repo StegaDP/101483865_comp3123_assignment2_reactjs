@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../api/axios";
+import { uploadEmployeeAvatar } from "../api/images";
+import { getInitials } from "../utils/avatar";
 
 const AddEmployeePage = () => {
   const [formData, setFormData] = useState({
@@ -14,10 +16,34 @@ const AddEmployeePage = () => {
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!avatarPreview) {
+      return undefined;
+    }
+    return () => URL.revokeObjectURL(avatarPreview);
+  }, [avatarPreview]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+    event.target.value = "";
+  };
+
+  const handleAvatarClear = () => {
+    setAvatarFile(null);
+    setAvatarPreview("");
   };
 
   const handleSubmit = async (e) => {
@@ -25,15 +51,33 @@ const AddEmployeePage = () => {
     setSaving(true);
     setError("");
     try {
-      await axios.post("/emp/employees", formData);
+      const response = await axios.post("/emp/employees", formData);
+      const employeeId = response?.data?.employee_id;
+
+      if (avatarFile && employeeId) {
+        try {
+          await uploadEmployeeAvatar(employeeId, avatarFile);
+        } catch (uploadError) {
+          console.error(uploadError);
+          window.alert(
+            "Employee created but the avatar upload failed. Open the profile later to try again.",
+          );
+        }
+      }
       navigate("/employees");
     } catch (err) {
-      setError("We couldn’t create the teammate. Please try again.");
+      setError("We couldn't create the teammate. Please try again.");
       console.error(err);
     } finally {
       setSaving(false);
     }
   };
+
+  const avatarInitials = getInitials(
+    formData.first_name,
+    formData.last_name,
+    formData.email,
+  );
 
   return (
     <div className="form-page">
@@ -46,6 +90,40 @@ const AddEmployeePage = () => {
         </p>
       </div>
       <form className="form-card form-stack" onSubmit={handleSubmit}>
+        <div className="avatar-upload">
+          <div className="avatar avatar-large">
+            {avatarPreview ? (
+              <img src={avatarPreview} alt="Selected avatar preview" />
+            ) : (
+              <span>{avatarInitials}</span>
+            )}
+          </div>
+          <div className="avatar-upload-actions">
+            <p className="subtle-text">
+              Add a face to the name. Use a square PNG or JPG at least 320px.
+            </p>
+            <div className="avatar-upload-buttons">
+              <label className="btn btn-ghost btn-small">
+                Upload photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleAvatarChange}
+                />
+              </label>
+              {avatarPreview && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-small"
+                  onClick={handleAvatarClear}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
         <div className="form-grid">
           <div className="input-field">
             <label className="input-label" htmlFor="add-first-name">
@@ -143,9 +221,7 @@ const AddEmployeePage = () => {
               value={formData.date_of_joining}
               onChange={handleChange}
             />
-            <p className="subtle-text">
-              We’ll use this to schedule onboarding.
-            </p>
+            <p className="subtle-text">We'll use this to schedule onboarding.</p>
           </div>
         </div>
         {error && <p className="form-error">{error}</p>}

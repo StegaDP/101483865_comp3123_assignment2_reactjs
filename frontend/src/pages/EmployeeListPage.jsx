@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "../api/axios";
+import { buildAvatarUrl, getInitials } from "../utils/avatar";
 
 const EmployeeListPage = () => {
   const [employees, setEmployees] = useState([]);
@@ -15,7 +16,7 @@ const EmployeeListPage = () => {
         const response = await axios.get("/emp/employees");
         setEmployees(response.data || []);
       } catch (err) {
-        setError("We couldn’t load your directory.");
+        setError("We couldn't load your directory.");
         console.error(err);
       } finally {
         setLoading(false);
@@ -230,43 +231,66 @@ const EmployeeListPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {sortedEmployees.map((employee) => (
-                  <tr key={employee.employee_id}>
-                    <td>
-                      <strong>
-                        {(employee.first_name || "").trim()}{" "}
-                        {(employee.last_name || "").trim()}
-                      </strong>
-                      <p className="subtle-text">{employee.email}</p>
-                    </td>
-                    <td>
-                      <span className="chip accent">
-                        {employee.department || "Unassigned"}
-                      </span>
-                    </td>
-                    <td>{employee.position || "—"}</td>
-                    <td>
-                      {employee.salary ? formatCurrency(employee.salary) : "—"}
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <Link
-                          className="btn btn-ghost btn-small"
-                          to={`/edit-employee/${employee.employee_id}`}
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-small"
-                          onClick={() => handleDelete(employee.employee_id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {sortedEmployees.map((employee) => {
+                  const fullName =
+                    `${(employee.first_name || "").trim()} ${(employee.last_name || "").trim()}`.trim();
+                  const avatarUrl = buildAvatarUrl(employee.imageId);
+                  const avatarInitials = getInitials(
+                    employee.first_name,
+                    employee.last_name,
+                    employee.email,
+                  );
+                  const avatarAlt =
+                    fullName || employee.email || "Employee avatar";
+
+                  return (
+                    <tr key={employee.employee_id}>
+                      <td>
+                        <div className="person-cell">
+                          <div className="avatar avatar-small">
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt={avatarAlt} />
+                            ) : (
+                              <span>{avatarInitials}</span>
+                            )}
+                          </div>
+                          <div className="person-meta">
+                            <strong>{fullName || employee.email}</strong>
+                            <p className="subtle-text">{employee.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="chip accent">
+                          {employee.department || "Unassigned"}
+                        </span>
+                      </td>
+                      <td>{employee.position || "-"}</td>
+                      <td>
+                        {employee.salary
+                          ? formatCurrency(employee.salary)
+                          : "-"}
+                      </td>
+                      <td>
+                        <div className="table-actions">
+                          <Link
+                            className="btn btn-ghost btn-small"
+                            to={`/edit-employee/${employee.employee_id}`}
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-small"
+                            onClick={() => handleDelete(employee.employee_id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
