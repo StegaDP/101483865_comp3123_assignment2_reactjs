@@ -61,7 +61,8 @@ const EmployeeListPage = () => {
           return (
             name.includes(query) ||
             (employee.email || "").toLowerCase().includes(query) ||
-            (employee.department || "").toLowerCase().includes(query)
+            (employee.department || "").toLowerCase().includes(query) ||
+            (employee.position || "").toLowerCase().includes(query)
           );
         })
       : employees;
